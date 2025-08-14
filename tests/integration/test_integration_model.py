@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 
 from adversarial.model import ResNet50
 from adversarial.utils import load_image

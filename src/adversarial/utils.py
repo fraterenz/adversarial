@@ -6,6 +6,7 @@ from adversarial import TorchImage
 
 log = logging.getLogger(__name__)
 
+
 def load_image(path2image: Path) -> TorchImage:
     """Load image from `path2image` using pytorch `decode_image` utility.
     Raise `ValueError` if the `path2image` is not a file and if it doesn't end

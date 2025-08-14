@@ -51,7 +51,6 @@ class ResNet50(Model):
             param.requires_grad = False
         log.info("end initialisation of resnet50")
 
-
     def _prediction(self, img: TorchImage):
         batch = self.preprocess(img).unsqueeze(0)
         prediction = self.model(batch).squeeze(0).softmax(0)
