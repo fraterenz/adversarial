@@ -8,7 +8,8 @@ from torch import Tensor, linalg
 import torch.nn as nn
 import torch
 
-from adversarial import TorchImageProcessed
+from adversarial import Category, TorchImage, TorchImageProcessed
+from adversarial.model import Model
 
 log = logging.getLogger(__name__)
 
@@ -130,4 +131,39 @@ class ProjGradL2(ProjGrad):
             epsilon,
             partial(linalg.vector_norm, ord=2, dim=(1, 2, 3), keepdim=True),
             partial(torch.clamp, max=1),
+        )
+
+
+@dataclass
+class AdvResult:
+    adv_img: TorchImage
+    adv_target: Category
+    adv_prediction: Category
+    adv_prob: float
+    original_img: TorchImage
+    original_category: Category
+    original_prob: float
+
+
+def attack(
+    img: TorchImage, target: Category, model: Model, strategy: AdvAttack, steps: int
+) -> AdvResult:
+    perturbation = Perturbation(torch.zeros_like(img, requires_grad=True))
+    original_category, original_prob = model.predict_label(img)
+
+    for step in range(steps):
+        pass
+
+    with torch.no_grad():
+        adv_img = TorchImageProcessed(torch.clamp(img + perturbation.pert, 0, 1))
+        adv_img = model.unpreprocess(adv_img)
+        adv_prediction, adv_prob = model.predict_label(adv_img)
+        return AdvResult(
+            adv_img,
+            target,
+            adv_prediction,
+            adv_prob,
+            img,
+            original_category,
+            original_prob,
         )
