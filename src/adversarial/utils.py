@@ -17,7 +17,7 @@ def load_image(path2image: Path) -> TorchImage:
     Returns:
         An image wrapped into a `TorchImage`
     """
-    log.info("Loading image from ", path2image)
+    log.info("Loading image from %s", path2image)
     suffix = path2image.suffix
     if suffix not in {".png", ".jpeg"}:
         raise ValueError(
@@ -26,5 +26,5 @@ def load_image(path2image: Path) -> TorchImage:
     if not path2image.is_file():
         raise ValueError(f"Cannot find image {path2image}")
     img = TorchImage(decode_image(str(path2image)))
-    log.info("Image loaded from ", path2image)
+    log.info("Image loaded from %s", path2image)
     return img

@@ -53,7 +53,7 @@ class ResNet50(Model):
         log.info("Initialisation of a ResNet50 pretrained model")
         if not device:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        log.debug("Setting device to: ", device)
+        log.debug("Setting device to: %s", device)
         # from https://docs.pytorch.org/vision/stable/models.html#classification
         weights = ResNet50_Weights.DEFAULT
         self.meta = weights.meta
@@ -61,7 +61,7 @@ class ResNet50(Model):
         # TODO cant get the weights from my machine using pytorch API, so need to download them manually
         # model = resnet50(weights=weights) # cant run this :(
         path2load = Path(".").expanduser() / "resnet50-11ad3fa6.pth"
-        log.info("Loading weights from: ", path2load)
+        log.info("Loading weights from: %s", path2load)
         sd = torch.load(path2load, map_location="cpu", weights_only=True)
         self.model = resnet50()
         self.model.load_state_dict(sd, strict=True)
@@ -92,15 +92,16 @@ class ResNet50(Model):
         with torch.no_grad():
             prediction = self._prediction(img)
             if category:
-                log.info("Predicting the score of category {} for this image", category)
+                log.info("Predicting the score of category %s for this image", category)
                 score = prediction[self.meta["categories"].index(category)].item()
                 return category, Score(score)
             log.info("Predicting most likely category for this image")
             class_id = int(prediction.argmax().item())
             score = prediction[class_id].item()
+            category = Category(self.meta["categories"][class_id])
             log.info(
-                "Returning a score of {} for the category {} for this image",
+                "Returning a score of %.2f for the category %s for this image",
                 score,
                 category,
             )
-            return Category(self.meta["categories"][class_id]), Score(score)
+            return category, Score(score)
