@@ -1,6 +1,8 @@
 import logging
+import numpy as np
 from pathlib import Path
 from torchvision.io import decode_image
+import torchvision.transforms.functional as F
 
 from adversarial import TorchImage
 
@@ -28,3 +30,10 @@ def load_image(path2image: Path) -> TorchImage:
     img = TorchImage(decode_image(str(path2image)))
     log.info("Image loaded from %s", path2image)
     return img
+
+
+def plot_image(img: TorchImage, ax, **imshow_kwargs):
+    img = F.to_pil_image(img.to("cpu"))
+    ax.imshow(np.asarray(img), **imshow_kwargs)
+    ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    return ax

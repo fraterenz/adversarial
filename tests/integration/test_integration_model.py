@@ -1,4 +1,5 @@
 from pathlib import Path
+import numpy as np
 
 import torch
 from torchvision.models import ResNet50_Weights
@@ -8,7 +9,7 @@ from adversarial.utils import load_image
 
 BASEPATH = Path(Path(__file__).resolve().parent / "fixtures")
 NB_CLASSES = len(ResNet50_Weights.DEFAULT.meta["categories"])
-EXPECTED_SIZE = torch.Size([NB_CLASSES])
+EXPECTED_SIZE = torch.Size([1, NB_CLASSES])
 
 
 def test_resnet50_predict_panda():
@@ -22,7 +23,8 @@ def test_resnet50_predict_panda():
     processed_img = model.preprocess(image)
     prediction = model.predict(processed_img)
     assert prediction.shape == EXPECTED_SIZE
-    assert torch.isclose(prediction.sum(0), torch.ones(1))
+    prediction.squeeze_(0)
+    np.testing.assert_almost_equal(prediction.sum(0).item(), 1.0)
     assert (prediction < 1).all().item()
 
 

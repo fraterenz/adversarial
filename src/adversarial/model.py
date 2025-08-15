@@ -13,7 +13,13 @@ class Model(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, subclass):
         return (
-            hasattr(subclass, "unpreprocess")
+            hasattr(subclass, "mean")
+            and callable(subclass.mean)
+            and hasattr(subclass, "std")
+            and callable(subclass.std)
+            and hasattr(subclass, "category_to_int")
+            and callable(subclass.category_to_int)
+            and hasattr(subclass, "unpreprocess")
             and callable(subclass.unpreprocess)
             and hasattr(subclass, "preprocess")
             and callable(subclass.preprocess)
@@ -25,6 +31,13 @@ class Model(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
+    def category_to_int(self, category: Category) -> int:
+        """Return an integer corresponding to the `category` in the set of all possible categories known by the model.
+        Raises ValueError if the category is not known by the model.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
         """Undo the preprocessing applied to an image to get back the original."""
         raise NotImplementedError
@@ -34,9 +47,21 @@ class Model(metaclass=abc.ABCMeta):
         """Preprocess an image."""
         raise NotImplementedError
 
+    @property
+    @abc.abstractmethod
+    def mean(self) -> torch.Tensor:
+        """The mean of the wights of the model."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def std(self) -> torch.Tensor:
+        """The std of the wights of the model."""
+        raise NotImplementedError
+
     @abc.abstractmethod
     def predict(self, img: TorchImageProcessed) -> Probabilities:
-        """Predict the probabilities for the processed image."""
+        """Predict the probabilities for the processed image as a one dimensional Tensor."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -89,39 +114,42 @@ class ResNet50(Model):
         return torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
     def predict(self, img: TorchImageProcessed) -> Probabilities:
-        with torch.no_grad():
-            # torch expects batches
-            batch = img.unsqueeze(0)
-            return self.model(batch).squeeze(0).softmax(0)
+        # torch expects batches
+        return self.model(img).softmax(-1)
 
     def _prediction(self, img: TorchImage) -> Probabilities:
         return self.predict(self.preprocess(img))
 
     def preprocess(self, img: TorchImage) -> TorchImageProcessed:
-        return self._preprocess(img)
+        return self._preprocess(img).unsqueeze(0)
 
+    @torch.no_grad
     def predict_label(
         self, img: TorchImage, category: Category | None = None
     ) -> Tuple[Category, Score]:
-        with torch.no_grad():
-            prediction = self._prediction(img)
-            if category:
-                log.info("Predicting the score of category %s for this image", category)
-                score = prediction[self.meta["categories"].index(category)].item()
-                return category, Score(score)
-            log.info("Predicting most likely category for this image")
-            class_id = int(prediction.argmax().item())
-            score = prediction[class_id].item()
-            category = Category(self.meta["categories"][class_id])
-            log.info(
-                "Returning a score of %.2f for the category %s for this image",
-                score,
-                category,
-            )
+        prediction = self._prediction(img)
+        if category:
+            log.info("Predicting the score of category %s for this image", category)
+            score = prediction[self.meta["categories"].index(category)].item()
             return category, Score(score)
+        log.info("Predicting most likely category for this image")
+        class_id = int(prediction.argmax().item())
+        log.debug("Found %s", class_id)
+        log.debug("prediction shape %s", prediction.shape)
+        score = prediction[:, class_id].item()
+        category = Category(self.meta["categories"][class_id])
+        log.info(
+            "Returning a score of %.2f for the category %s for this image",
+            score,
+            category,
+        )
+        return category, Score(score)
 
     def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
         """As indicated [here](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights),
         the processing is lossy due to croping and resizing.
         """
-        return TorchImage(img * self.std + self.mean)
+        return TorchImage((img * self.std + self.mean).squeeze(0))
+
+    def category_to_int(self, category: Category) -> int:
+        return self.meta["categories"].index(category)

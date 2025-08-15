@@ -8,7 +8,7 @@ from torch import Tensor
 
 
 TorchImageProcessed = NewType("TorchImageProcessed", Tensor)
-"""A preprocessed image (pixels within [0, 1]) for which we can compute a prediction."""
+"""A preprocessed image (pixels centered around the mean with std of 1) for which we can compute a prediction."""
 TorchImage = NewType("TorchImage", Tensor)
 """An image loaded with `torch.decode_image`."""
 Probabilities = NewType("Probabilities", Tensor)
