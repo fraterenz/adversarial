@@ -155,7 +155,8 @@ def attack(
         pass
 
     with torch.no_grad():
-        adv_img = TorchImageProcessed(torch.clamp(img + perturbation.pert, 0, 1))
+        processed_img = model.preprocess(img)
+        adv_img = noisy_image(processed_img, perturbation)
         adv_img = model.unpreprocess(adv_img)
         adv_prediction, adv_prob = model.predict_label(adv_img)
         return AdvResult(
