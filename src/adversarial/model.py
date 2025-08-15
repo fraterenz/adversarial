@@ -13,7 +13,9 @@ class Model(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, subclass):
         return (
-            hasattr(subclass, "preprocess")
+            hasattr(subclass, "unpreprocess")
+            and callable(subclass.unpreprocess)
+            and hasattr(subclass, "preprocess")
             and callable(subclass.preprocess)
             and hasattr(subclass, "predict_label")
             and callable(subclass.predict_label)
@@ -23,8 +25,13 @@ class Model(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
+    def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
+        """Undo the preprocessing applied to an image to get back the original."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def preprocess(self, img: TorchImage) -> TorchImageProcessed:
-        """ "Preprocess an image."""
+        """Preprocess an image."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -49,10 +56,9 @@ class Model(metaclass=abc.ABCMeta):
 class ResNet50(Model):
     def __init__(self, *, device=None) -> None:
         super().__init__()
-        # TODO deal with device?
         log.info("Initialisation of a ResNet50 pretrained model")
         if not device:
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cpu")
         log.debug("Setting device to: %s", device)
         # from https://docs.pytorch.org/vision/stable/models.html#classification
         weights = ResNet50_Weights.DEFAULT
@@ -73,6 +79,14 @@ class ResNet50(Model):
         for param in self.model.parameters():
             param.requires_grad = False
         log.info("Initialisation of resnet50 completed")
+
+    @property
+    def mean(self) -> torch.Tensor:
+        return torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+
+    @property
+    def std(self) -> torch.Tensor:
+        return torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
     def predict(self, img: TorchImageProcessed) -> Probabilities:
         with torch.no_grad():
@@ -105,3 +119,9 @@ class ResNet50(Model):
                 category,
             )
             return category, Score(score)
+
+    def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
+        """As indicated [here](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights),
+        the processing is lossy due to croping and resizing.
+        """
+        return TorchImage(img * self.std + self.mean)
