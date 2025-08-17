@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
 ### Option 2
 Download source code, the pretrained model weights and run tests with `pytest`
-1. `git clone `
+1. `git clone git@github.com:fraterenz/adversarial.git`
 3. download the pretrained model manually: `curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"`
 3. `uv run pytest`
 Cute pictures of pandas will be generated in the folder `/tests/integration/fixtures/`
