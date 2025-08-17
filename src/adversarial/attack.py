@@ -103,7 +103,7 @@ class ProjGrad(AdvAttack):
         raise NotImplementedError
 
     def initialise_perturbation(self, like: TorchImageProcessed) -> Perturbation:
-        rand = torch.empty_like(like.data, dtype=torch.float32).uniform_(
+        rand = torch.empty_like(like.data).uniform_(
             -self.epsilon / 10, self.epsilon / 10
         )
         self.projection_(rand)
