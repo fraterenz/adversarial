@@ -65,9 +65,7 @@ def test_projection_random_with_norm_smaller_than_epsilon(H, W, lr, eps, is_l2, 
     v = x.clone()
 
     assert is_v_within_eps_ball(grad_method, v, eps)
-    assert torch.all(
-        v.abs() <= (eps * torch.ones_like(v))
-    )
+    assert torch.all(v.abs() <= (eps * torch.ones_like(v)))
 
     grad_method.projection_(v)
     torch.testing.assert_close(x, v)

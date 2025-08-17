@@ -1,5 +1,6 @@
 ## Adversarial
-![workflow](https://github.com/fraterenz/adversarial/actions/workflows/test.yml/badge.svg)
+[![Tests](https://github.com/fraterenz/adversarial/actions/workflows/app.yml/badge.svg)](https://github.com/fraterenz/adversarial/actions/workflows/app.yml)
+
 Generate adversarial attacks by adding noise to into the image in such a way that the
 model missclassifies it as the desired target class, without making the noise perceptible
 to a casual human viewer.
