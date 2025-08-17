@@ -1,10 +1,10 @@
 [project]
 name = "adversarial"
 version = "0.1.0"
-description = "Add your description here"
+description = "Manipulates images by adding adversarial noise with PyTorch"
 readme = "README.md"
 authors = [
-    { name = "Francesco Terenzi", email = "fra.terenz1993@gmail.com" }
+    { name = "Francesco Terenzi", email = "francesco.terenzi@alumni.epfl.ch" }
 ]
 requires-python = ">=3.13"
 dependencies = [
