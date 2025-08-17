@@ -104,13 +104,18 @@ class ProjGrad(AdvAttack):
 
     def initialise_perturbation(self, like: TorchImageProcessed) -> Perturbation:
         rand = torch.empty_like(like.data, dtype=torch.float32).uniform_(
-            -self.epsilon, self.epsilon
+            -self.epsilon / 10, self.epsilon / 10
         )
         self.projection_(rand)
         perturbation = Perturbation(rand)
         log.info(
-            "Initialised a perturbation with random noise with shape %s with values smaller or eq than %s",
+            "Initialised a perturbation with random noise with shape %s with norm 2 %s < %s",
             perturbation.pert.shape,
+            linalg.vector_norm(
+                perturbation.pert,
+                ord=torch.inf,
+                keepdim=False,
+            ).item(),
             self.epsilon,
         )
         log.debug("%s", perturbation.pert)
@@ -148,7 +153,7 @@ class ProjGrad(AdvAttack):
 
 
 class ProjGradLInf(ProjGrad):
-    """Relative gradient descent method projected into the Linfinite norm, a volume of size `epsilon`^D.
+    """Relative gradient descent method projected into the Linfinite norm, a ball of radius epsilon.
 
     Reference: Adversarial Robustness - Theory and Practice, [Chap3](https://adversarial-ml-tutorial.org/adversarial_examples/).
     """
@@ -156,7 +161,7 @@ class ProjGradLInf(ProjGrad):
     lr: float
     """Learning rate."""
     epsilon: float
-    """The max norm value of the perturbation."""
+    """The max norm value of the perturbation aka the radius of the ball of norm Linf."""
 
     def __init__(self, lr: float, epsilon: float):
         super().__init__(
@@ -179,7 +184,7 @@ class ProjGradL2(ProjGrad):
     lr: float
     """Learning rate."""
     epsilon: float
-    """The max norm2 value of the perturbation."""
+    """The max norm value of the perturbation aka the radius of the ball of norm L2."""
 
     def __init__(self, lr: float, epsilon: float):
         super().__init__(
@@ -221,7 +226,6 @@ class AdvResult:
             f"Original (left) adversarial (right) with target class {self.adv_target}\nthe model after an adv attack predicts this image as {self.adv_prediction}\non top of the images the <category>:<probability> are shown"
         )
         plt.savefig(path2save, dpi=800)
-        log.info("Saving the results as a plot in %s", path2save)
         plt.tight_layout()
         plt.close(figure)
         assert path2save.is_file()
@@ -229,7 +233,11 @@ class AdvResult:
 
 
 def adversarial_attack(
-    img: TorchImage, target: Category, model: Model, strategy: AdvAttack, steps: int = 20
+    img: TorchImage,
+    target: Category,
+    model: Model,
+    strategy: AdvAttack,
+    steps: int = 20,
 ) -> AdvResult:
     """Add adversial noise to an image."""
 

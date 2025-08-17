@@ -14,7 +14,7 @@ from adversarial.model import ResNet50
 from adversarial.utils import load_image
 
 BASEPATH = Path(Path(__file__).resolve().parent / "fixtures")
-EPSILON = 0.2
+EPSILON = 0.1
 LR = 0.2
 
 

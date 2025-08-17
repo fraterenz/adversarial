@@ -37,5 +37,8 @@ jobs:
     - run: ruff check --fix
     - run: ruff format
 
+    - name: Dowlonad pretrained weights manually
+      run: curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"
+
     - name: Run tests
-      run: uv run pytest tests
+      run: uv run pytest
