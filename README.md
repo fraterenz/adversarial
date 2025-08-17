@@ -1,9 +1,7 @@
 ## Adversarial
 [![Tests](https://github.com/fraterenz/adversarial/actions/workflows/app.yml/badge.svg)](https://github.com/fraterenz/adversarial/actions/workflows/app.yml)
 
-Generate adversarial attacks by adding noise to into the image in such a way that the
-model missclassifies it as the desired target class, without making the noise perceptible
-to a casual human viewer.
+Generate adversarial attacks by adding noise to the image such that the model missclassifies it as the desired target class, without making the noise perceptible to a casual human viewer.
 
 ## Features
 My idea was to be generic over the method to perform the targeted attacks.
@@ -24,12 +22,11 @@ For example:
 1. create a new app with `uv`: `uv init --app test-adv --python 3.13`
 2. `cd` into `test-adv`: `cd test-adv`
 2. install this library into the project `uv add git+https://github.com/fraterenz/adversarial`
-3. download the pretrained model manually: `curl -O -L https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0`
-4. use the library as indicated bellow, copy code into `main.py` replacing `/path/to/image` with the folder where the image is stored.
+3. download the pretrained model manually: `curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"`
+4. use the library: create a `main.py` and copy-paste the code below replacing `/path/to/image` with the folder where the image is stored.
 5. run main `uv run main.py log_cli=true --log-cli-level=INFO`
 
-After having performed the steps above, load the library into a new main and use it as `uv run python main.py`.
-
+An example of a `main.py` performing the attack that can be run with `uv run main.py log_cli=true --log-cli-level=INFO`:
 ```python
 from pathlib import Path
 from adversarial import Category, model
@@ -66,7 +63,14 @@ if __name__ == "__main__":
 ### Option 2
 Download source code, the pretrained model weights and run tests with `pytest`
 1. `git clone `
-2. download the pretrained model manually: `curl -O `
+3. download the pretrained model manually: `curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"`
 3. `uv run pytest`
 Cute pictures of pandas will be generated in the folder `/tests/integration/fixtures/`
 
+
+## Limitations and future steps
+Main limitations:
+1. works for CPU only
+2. work for one image at the time.
+
+What are the future steps? Maybe addressing the limitations and something else?
