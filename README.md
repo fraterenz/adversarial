@@ -26,6 +26,7 @@ This is achieved in three main steps:
     - clamps each pixel inside a fixed range `-epsilon, +epsilon` (Linf),
     - rescales the overall change to the allowed size, a
 4. (technicality) We keep pixel values valid (within 0 and 1 here).
+
 We repeat this procedure until either the model switches from the original prediction to the target class or a maximal number of `steps` have been taken (set to default in `adversarial_attack()` to 100).
 
 ## Usage
