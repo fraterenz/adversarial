@@ -6,11 +6,12 @@ Generate adversarial attacks by adding noise to the image such that the model mi
 ## Features
 My idea was to be generic over the method to perform the targeted attacks (but only `torchvision` models).
 Key features:
-- being generic such that it can be expanded in the future by implementing new models and new attacks (they are independent):
-    - models can be implemented by subclassing `adversarial.model.Model` (here I used `ResNet50`)
-    - attacks can be defined by subclassing `adversarial.attack.AdvAttack` (here I have implemented projected gradient descent with L2 and Linf norms)
-- informative logging
-- accurate unit testing and integration tests
+- 🧰 being generic such that it can be expanded in the future by implementing new models and new attacks (they are independent):
+    - 🤖 models can be implemented by subclassing `adversarial.model.Model` (here I used `ResNet50`)
+    - :ninja: attacks can be defined by subclassing `adversarial.attack.AdvAttack` (here I have implemented projected gradient descent with L2 and Linf norms)
+- 📝 informative logging
+- 🧪 accurate unit testing and integration tests
+- 📚 [docs](https://fraterenz.github.io/adversarial/)
 
 This code is generic also over the strategy to perform adverserial attack.
 However, as I've only implemented projected gradient descent, I will briefly discuss this method here.
@@ -22,9 +23,9 @@ The norm of the noise is constrained by `epsilon` such that the noise is small a
 This is achieved in three main steps:
 1. Step in the loss landscape: compute the gradient of the loss function (cross entropy between the model's predicted and the adversarial target's class) and take a step in the direction towards the minimum gradient of this loss. Note that this step is normalised by the norm (L2 or Linf) of the gradient.
 2. After each step, we project back to stay within the allowed change around the original image `epsilon`. Based on the norm chosen (`ProjGradLInf` or `ProjGradL2`) the method either:
-  - clamps each pixel inside a fixed range `-epsilon, +epsilon` (Linf),
-  - rescales the overall change to the allowed size, a
-3. (technicality) We keep pixel values valid (within 0 and 1 here).
+    - clamps each pixel inside a fixed range `-epsilon, +epsilon` (Linf),
+    - rescales the overall change to the allowed size, a
+4. (technicality) We keep pixel values valid (within 0 and 1 here).
 We repeat this procedure until either the model switches from the original prediction to the target class or a maximal number of `steps` have been taken (set to default in `adversarial_attack()` to 100).
 
 ## Usage
