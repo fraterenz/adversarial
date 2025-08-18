@@ -17,15 +17,18 @@ This code is generic also over the strategy to perform adverserial attack.
 However, as I've only implemented projected gradient descent, I will briefly discuss this method here.
 
 ### Projected gradient descent
-The idea is to find the adversarial noise by taking many small steps (learning rate `lr`) that makes the model favor the target class.
-The norm of the noise is constrained by `epsilon` such that the noise is small and not perceptible to a casual human viewer.
+The idea is to find the adversarial noise by taking many small steps (learning rate $\alpha$) that makes the model favor the target class.
+The norm of the noise is constrained by $\epsilon$ such that the noise is small and not perceptible to a casual human viewer.
 
 This is achieved in three main steps:
-1. Step in the loss landscape: compute the gradient of the loss function (cross entropy between the model's predicted and the adversarial target's class) and take a step in the direction towards the minimum gradient of this loss. Note that this step is normalised by the norm (L2 or Linf) of the gradient.
-2. After each step, we project back to stay within the allowed change around the original image `epsilon`. Based on the norm chosen (`ProjGradLInf` or `ProjGradL2`) the method either:
-    - clamps each pixel inside a fixed range `-epsilon, +epsilon` (Linf),
-    - rescales the overall change to the allowed size, a
-4. (technicality) We keep pixel values valid (within 0 and 1 here).
+1. Take a step towards the minimum of the loss $\mathcal{L}$:
+```math
+    \delta = \delta_0 - \alpha \frac{\nabla_x \mathcal{L}}{\left\lVert \nabla_x \mathcal{L} \right\rVert_p}
+```
+2. Project $\delta$ to obtain a small noise $\left\lVert \delta \right\rVert_p \leq \epsilon$:
+    - $p=\infty$, `ProjGradLInf` clamps each pixel within the range $\[-\epsilon, +\epsilon\]$
+    - $p=2$, `ProjGradL2` rescales as $\delta = \epsilon  \delta / \left\lVert \delta \right\rVert_2$.
+3. Keep valid pixel values (within 0 and 1 here).
 
 We repeat this procedure until either the model switches from the original prediction to the target class or a maximal number of `steps` have been taken (set to default in `adversarial_attack()` to 100).
 
