@@ -80,12 +80,13 @@ Download source code, the pretrained model weights and run tests with `pytest`
 1. `git clone git@github.com:fraterenz/adversarial.git`
 3. download the pretrained model manually: `curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"`
 3. `uv run pytest`
+
 Cute pictures of giant pandas will be generated in the folder `/tests/integration/fixtures/`.
 Have a look in particular at the test `test_adversarial_attack` in `test/integration/test_integration_attack.py` and the output it generates:
-1. `panda_attack_l2_into_gibbon.png`
-2. `panda_attack_l2_into_tabby.png`
-3. `panda_attack_lInf_into_gibbon.png`
-4. `panda_attack_lInf_into_tabby.png`
+  - `panda_attack_l2_into_gibbon.png`
+  - `panda_attack_l2_into_tabby.png`
+  - `panda_attack_lInf_into_gibbon.png`
+  - `panda_attack_lInf_into_tabby.png`
 
 
 ## Limitations and future steps
