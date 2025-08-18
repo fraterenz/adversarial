@@ -19,8 +19,6 @@ class Model(metaclass=abc.ABCMeta):
             and callable(subclass.std)
             and hasattr(subclass, "category_to_int")
             and callable(subclass.category_to_int)
-            and hasattr(subclass, "unpreprocess")
-            and callable(subclass.unpreprocess)
             and hasattr(subclass, "preprocess")
             and callable(subclass.preprocess)
             and hasattr(subclass, "predict_label")
@@ -35,11 +33,6 @@ class Model(metaclass=abc.ABCMeta):
         """Return an integer corresponding to the `category` in the set of all possible categories known by the model.
         Raises ValueError if the category is not known by the model.
         """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
-        """Undo the preprocessing applied to an image to get back the original."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -66,7 +59,7 @@ class Model(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def predict_label(
-        self, img: TorchImage, category: Category | None = None
+        self, img: TorchImageProcessed, category: Category | None = None
     ) -> Tuple[Category, Score]:
         """Predict the label for the image.
 
@@ -88,6 +81,7 @@ class ResNet50(Model):
         # from https://docs.pytorch.org/vision/stable/models.html#classification
         weights = ResNet50_Weights.DEFAULT
         self.meta = weights.meta
+        self.crop_size = weights.transforms.keywords["crop_size"]
         self._preprocess = weights.transforms()
         # TODO cant get the weights from my machine using pytorch API, so need to download them manually
         # model = resnet50(weights=weights) # cant run this :(
@@ -114,20 +108,31 @@ class ResNet50(Model):
         return torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
     def predict(self, img: TorchImageProcessed) -> Probabilities:
-        # torch expects batches
+        self.normalise_(img)
         return self.model(img).softmax(-1)
 
-    def _prediction(self, img: TorchImage) -> Probabilities:
-        return self.predict(self.preprocess(img))
-
     def preprocess(self, img: TorchImage) -> TorchImageProcessed:
-        return self._preprocess(img).unsqueeze(0)
+        """Returns pixels within 0 and 1."""
+        processed = self._preprocess(img)
+        self.unnormalise_(processed)
+        return processed.unsqueeze(0)
+
+    def unnormalise_(self, v: torch.Tensor):
+        """See this [here](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights)"""
+        v.mul_(self.std)
+        v.add_(self.mean)
+
+    def normalise_(self, v: torch.Tensor):
+        """See this [here](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights)"""
+        v.sub_(self.mean)
+        v.div_(self.std)
 
     @torch.no_grad
     def predict_label(
-        self, img: TorchImage, category: Category | None = None
+        self, img: TorchImageProcessed, category: Category | None = None
     ) -> Tuple[Category, Score]:
-        prediction = self._prediction(img)
+        prediction = self.predict(img)
+        self.unnormalise_(img)
         if category:
             log.info("Predicting the score of category %s for this image", category)
             score = prediction[self.meta["categories"].index(category)].item()
@@ -144,12 +149,6 @@ class ResNet50(Model):
             category,
         )
         return category, Score(score)
-
-    def unpreprocess(self, img: TorchImageProcessed) -> TorchImage:
-        """As indicated [here](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights),
-        the processing is lossy due to croping and resizing.
-        """
-        return TorchImage((img * self.std + self.mean).squeeze(0))
 
     def category_to_int(self, category: Category) -> int:
         return self.meta["categories"].index(category)

@@ -30,26 +30,12 @@ class Perturbation:
 
 
 def noisy_image(
-    img: TorchImageProcessed, perturbation: Perturbation, mean: Tensor, std: Tensor
+    img: TorchImageProcessed,
+    perturbation: Perturbation,
 ) -> TorchImageProcessed:
-    """Add additive noise to an processed image.
-
-    To return a `TorchImageProcessed` we need to keep the pixels with 0 mean and std of 1,
-    hence with need to know `mean` and `std`, and both should have the same shape
-    as the `img`.
-    """
-    # in resnet50, values are first rescaled to [0.0, 1.0] and then normalized
-    # using mean=[0.485, 0.456, 0.406] and std=[0.229, 0.224, 0.225].
-    # https://docs.pytorch.org/vision/main/models/generated/torchvision.models.resnet50.html
-    # To keep them in this range, we need to clip values.
-    # The lower and upper bounds are determined by the rescaling followed by
-    # normalisation.
-    # Althoug this is specific to this model, I think we can have other models
-    # preprocessing the images in this way, and thus this function might be used.
-    low = (0.0 - mean) / std
-    high = (1.0 - mean) / std
+    """Add additive noise to an processed image."""
     log.debug("Creating a noisy image")
-    return TorchImageProcessed((img + perturbation.pert).clamp(low, high))
+    return TorchImageProcessed((img + perturbation.pert).clamp(0, 1))
 
 
 @dataclass
@@ -103,10 +89,11 @@ class ProjGrad(AdvAttack):
         raise NotImplementedError
 
     def initialise_perturbation(self, like: TorchImageProcessed) -> Perturbation:
-        rand = torch.empty_like(like.data).uniform_(
-            -self.epsilon / 10, self.epsilon / 10
-        )
+        # TODO this should be diff for L2
+        rand = torch.empty_like(like).uniform_(-1.0, 1.0) * self.epsilon
         self.projection_(rand)
+        # valid pixels
+        rand.clamp_(0, 1)
         perturbation = Perturbation(rand)
         log.info(
             "Initialised a perturbation with random noise with shape %s with norm 2 %s < %s",
@@ -203,11 +190,11 @@ class ProjGradL2(ProjGrad):
 
 @dataclass
 class AdvResult:
-    adv_img: TorchImage
+    adv_img: TorchImageProcessed
     adv_target: Category
     adv_prediction: Category
     adv_prob: float
-    original_img: TorchImage
+    original_img: TorchImageProcessed
     original_category: Category
     original_prob: float
 
@@ -219,6 +206,8 @@ class AdvResult:
         axes = axes.squeeze()
         log.debug("%s", axes)
         for ax, img in zip(axes, [self.original_img, self.adv_img]):
+            if img.ndim == 4:
+                img.squeeze_(0)
             plot_image(img, ax)
         axes[0].set_title(f"{self.original_category}:{self.original_prob:.2f}")
         axes[1].set_title(f"{self.adv_prediction}:{self.adv_prob:.2f}")
@@ -237,22 +226,63 @@ def adversarial_attack(
     target: Category,
     model: Model,
     strategy: AdvAttack,
-    steps: int = 20,
+    steps: int = 100,
 ) -> AdvResult:
-    """Add adversial noise to an image."""
+    """
+    Run a targeted adversarial attack on a single image using CrossEntropy loss
+    and an update/projection strategy (e.g., L∞ or L2 PGD) until the model
+    predicts the requested `target` class or the maximal number of `steps` are
+    reached.
+
+    Args:
+        img: Input image tensor (single image). This image will be then
+            processed by the model using `adversarial.model.Model.preprocess`.
+        target: Desired target `adversarial.Category` of the attack that will be predicted
+            by the model
+        model: Model class exposing `preprocess`, `predict`, `predict_label`,
+            and `category_to_int`, see `adversarial.model.Model`.
+        strategy: Attack rule. Must provide `adversarial.attack.AdvAttack.initialise_perturbation`
+            and `adversarial.attack.AdvAttack.perturb_`.
+        steps: Maximum number of optimization iterations.
+
+
+    Returns:
+        AdvResult: includes the adversarial image, the requested `target`, the
+        adversarial prediction and probability, the preprocessed original
+        image, and the original prediction and probability. See `adversarial.attack.AdvResult`.
+
+
+    Workflow:
+        - Preprocess `img` with `model.preprocess`, record the model’s original
+          prediction/probability.
+        - Initialize a perturbation via `strategy.initialise_perturbation(...)`.
+        - For up to `steps` iterations: form the adversarial image (via
+          `noisy_image(processed_img, perturbation)`), compute logits, compute
+          CrossEntropy against `target`, backprop to the perturbation, and call
+          `strategy.perturb_(...)` to take a step and project back into the
+          allowed norm ball; stop early if the target class is achieved.
+        - Return an `AdvResult` containing the final adversarial image and both
+          the original and adversarial predictions/probabilities.
+
+    Notes:
+        - This function performs **targeted** attacks only (minimizes CE to `target`).
+        - Pixel-range clamping or any domain-specific constraints are expected to be
+          handled within the `strategy`; this function itself does not clamp
+          the image.
+        - Logging is emitted throughout; gradients are taken w.r.t. the perturbation.
+    """
 
     def save_results():
         log.info("End of the attack after %d iter, storing result", step)
-        adv_img = noisy_image(processed_img, perturbation, model.mean, model.std)
-        adv_img = model.unpreprocess(adv_img)
-        log.debug("the adversarial image has size %s", adv_img.shape)
+        adv_img = noisy_image(processed_img, perturbation)
         adv_prediction, adv_prob = model.predict_label(adv_img)
+        log.debug("the adversarial image has size %s", adv_img.shape)
         return AdvResult(
             adv_img,
             target,
             adv_prediction,
             adv_prob,
-            img,
+            model.preprocess(img),
             original_category,
             original_prob,
         )
@@ -280,7 +310,7 @@ def adversarial_attack(
     log.debug("initialisation of the first perturbation to random data")
     perturbation = strategy.initialise_perturbation(processed_img)
     log.debug("perturbation shape %s", perturbation.pert.shape)
-    original_category, original_prob = model.predict_label(img)
+    original_category, original_prob = model.predict_label(processed_img)
     log.info(
         "The model predicts original category %s with score %.2f",
         original_category,
@@ -289,7 +319,7 @@ def adversarial_attack(
 
     log.info("Starting the attack with %s", strategy)
     for step in range(steps):
-        adv_img = noisy_image(processed_img, perturbation, model.mean, model.std)
+        adv_img = noisy_image(processed_img, perturbation)
         log.debug("noisy image has shape %s", adv_img.shape)
         logits = model.predict(adv_img)
         log.debug("logits: shape %s", logits.shape)

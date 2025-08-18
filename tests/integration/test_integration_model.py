@@ -10,18 +10,18 @@ from adversarial.utils import load_image
 BASEPATH = Path(Path(__file__).resolve().parent / "fixtures")
 NB_CLASSES = len(ResNet50_Weights.DEFAULT.meta["categories"])
 EXPECTED_SIZE = torch.Size([1, NB_CLASSES])
+MY_MDL = ResNet50()
+PANDA = MY_MDL.preprocess(load_image(BASEPATH / "panda.jpeg"))
+CAT = MY_MDL.preprocess(load_image(BASEPATH / "tabby_cat.jpeg"))
 
 
 def test_resnet50_predict_panda():
     expected = "giant panda"
-    image = load_image(BASEPATH / "panda.jpeg")
-    model = ResNet50()
-    label, score = model.predict_label(image)
+    label, score = MY_MDL.predict_label(PANDA)
     assert label == expected
     assert score > 0.5
 
-    processed_img = model.preprocess(image)
-    prediction = model.predict(processed_img)
+    prediction = MY_MDL.predict(PANDA)
     assert prediction.shape == EXPECTED_SIZE
     prediction.squeeze_(0)
     np.testing.assert_almost_equal(prediction.sum(0).item(), 1.0)
@@ -29,8 +29,6 @@ def test_resnet50_predict_panda():
 
 
 def test_resnet50_predict_tabby_cat():
-    image = load_image(BASEPATH / "tabby_cat.jpeg")
-    model = ResNet50()
-    label, score = model.predict_label(image)
+    label, score = MY_MDL.predict_label(CAT)
     assert label == "tabby"
     assert score > 0.3

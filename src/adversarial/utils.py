@@ -1,10 +1,9 @@
 import logging
-import numpy as np
 from pathlib import Path
 from torchvision.io import decode_image
 import torchvision.transforms.functional as F
 
-from adversarial import TorchImage
+from adversarial import TorchImage, TorchImageProcessed
 
 log = logging.getLogger(__name__)
 
@@ -32,8 +31,9 @@ def load_image(path2image: Path) -> TorchImage:
     return img
 
 
-def plot_image(img: TorchImage, ax, **imshow_kwargs):
-    img = F.to_pil_image(img.to("cpu"))
-    ax.imshow(np.asarray(img), **imshow_kwargs)
+def plot_image(img: TorchImageProcessed, ax, **imshow_kwargs):
+    # permute: PyTorch images are channel-first and plt expects channel-last
+    img = F.to_pil_image(img.permute(1, 2, 0).detach().cpu().numpy())
+    ax.imshow(img, **imshow_kwargs)
     ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     return ax

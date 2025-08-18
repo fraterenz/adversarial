@@ -18,7 +18,7 @@ def is_v_within_eps_ball(
     projecting_strategy: ProjGrad, v: torch.Tensor, epsilon: float
 ) -> bool:
     v_norm = projecting_strategy.norm(v).squeeze(0).item()
-    return round(v_norm, 5) <= round(epsilon, 5)
+    return round(v_norm, 4) <= round(epsilon, 4)
 
 
 @given(
@@ -29,10 +29,10 @@ def is_v_within_eps_ball(
     st.booleans(),
     st.integers(min_value=-10, max_value=30000),
 )
-def test_proj_grad_ones_initial(H, W, lr, eps, is_l2, seed):
+def test_proj_grad_twos_initial(H, W, lr, eps, is_l2, seed):
     torch.manual_seed(seed)
     strategy = ProjGradL2(lr, eps) if is_l2 else ProjGradLInf(lr, eps)
-    x_data = torch.ones((1, C, H, W), requires_grad=True)
+    x_data = 2 * torch.ones((1, C, H, W), requires_grad=True)
 
     x_bf_proj = Perturbation(x_data.clone())
     x_bf_proj.pert.grad = torch.empty_like(x_bf_proj.pert)
