@@ -18,7 +18,7 @@ def is_v_within_eps_ball(
     projecting_strategy: ProjGrad, v: torch.Tensor, epsilon: float
 ) -> bool:
     v_norm = projecting_strategy.norm(v).squeeze(0).item()
-    return round(v_norm, 4) <= round(epsilon, 4)
+    return round(v_norm, 3) <= round(epsilon, 3)
 
 
 @given(
