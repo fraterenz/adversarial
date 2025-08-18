@@ -1,6 +1,6 @@
 [project]
 name = "adversarial"
-version = "0.1.0"
+version = "1.0.0"
 description = "Manipulates images by adding adversarial noise with PyTorch"
 readme = "README.md"
 authors = [
