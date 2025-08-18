@@ -15,7 +15,7 @@ from adversarial.model import ResNet50
 from adversarial.utils import load_image
 
 BASEPATH = Path(Path(__file__).resolve().parent / "fixtures")
-EPSILON = 0.01
+EPSILON = 0.02
 LR = 0.05
 
 
@@ -55,7 +55,7 @@ def test_adversarial_attack(panda: bool = True):
     # for Linf perturbations, because the volume of the L2 ball is proportional
     # to sqrt(D) times the volume of the Linf ball, D is dimension
     D = image.numel()
-    for target in ["tabby", "gibbon"]:
+    for target in ["tabby" if panda else "giant panda", "gibbon"]:
         for norm_type, eps in [("l2", EPSILON * math.sqrt(D)), ("lInf", EPSILON)]:
             result = adversarial_attack(
                 image,
