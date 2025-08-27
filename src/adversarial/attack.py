@@ -303,7 +303,7 @@ def adversarial_attack(
     )
 
     log.info("Using the cross entropy loss")
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()
     log.debug("preprocessing the image with shape %s", img.shape)
     processed_img = model.preprocess(img)
     log.debug("after preprocessing the image with shape %s", processed_img.shape)
@@ -321,11 +321,11 @@ def adversarial_attack(
     for step in range(steps):
         adv_img = noisy_image(processed_img, perturbation)
         log.debug("noisy image has shape %s", adv_img.shape)
-        logits = model.predict(adv_img)
-        log.debug("logits: shape %s", logits.shape)
-        predicted_int = torch.argmax(logits, dim=-1)
+        probs = model.predict(adv_img)
+        log.debug("probabilities: shape %s", probs.shape)
+        predicted_int = torch.argmax(probs, dim=-1)
         log.debug("target_int %s with shape %s", target_int, target_int.shape)
-        loss = criterion(logits, target_int)
+        loss = criterion(probs.clamp_min(1e-12).log(), target_int)
         log.debug("%s", loss)
         loss.backward()
 
