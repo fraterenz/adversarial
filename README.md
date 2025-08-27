@@ -41,7 +41,7 @@ Install the library `adversarial` into a project or an environment with python 3
 For example:
 1. create a new app with `uv`: `uv init --app test-adv --python 3.13`
 2. `cd` into `test-adv`: `cd test-adv`
-2. install this library into the project `uv add git+https://github.com/fraterenz/adversarial --tag v1.0.1`
+2. install this library into the project `uv add git+https://github.com/fraterenz/adversarial --tag v1.0.2`
 3. download the pretrained model manually: `curl -O -L "https://www.dropbox.com/scl/fi/3cfjlzp4ls8n5imtfe51d/resnet50-11ad3fa6.pth?rlkey=zxaaj95mzlsd4tv7vjos0kwc5&st=om7rfwgo&dl=0"`
 4. use the library: create a `main.py` and copy-paste the code below replacing `/path/to/image` with the folder where the image is stored.
 5. run main `uv run main.py log_cli=true --log-cli-level=INFO`
